@@ -5,32 +5,67 @@
 
 (function ()
 {
+  var config = {
+    colorSpeed: 1,
+    rotationSpeed: 12,
+    movementSpeed: 6,
 
-  var colorSpeed = 1;
-  var rotationSpeed = 12;
-  var movementSpeed = 6;
+    spinners: {
+      size: 10,
+      count: 3,
+      border: {
+        size: 10,
+        style: 'dotted'
+      }
+    },
 
-  var squares = {
-    size: 10,
-    border: 10,
-    count: 3
+    tx: window.innerWidth,
+    ty: window.innerHeight
   };
 
+  var Keyboard = {
+    KEY_ESC: 27,
+    KEY_0:   48,
+    KEY_1:   49,
+    KEY_2:   50,
+    KEY_3:   51,
+    KEY_4:   52,
+    KEY_5:   53,
+    KEY_6:   54,
+    KEY_7:   55,
+    KEY_8:   56,
+    KEY_9:   57,
+    KEY_A:   65,
+    KEY_D:   68,
+    KEY_S:   83,
+    KEY_W:   87,
+
+    KEY_ARROW_LEFT:  37,
+    KEY_ARROW_RIGHT: 39,
+    KEY_ARROW_UP:    38,
+    KEY_ARROW_DOWN:  40,
+    KEY_SPACE:       32
+  };
   var currentKeys = {};
-  var tx, ty;
-  tx = window.innerWidth;
-  ty = window.innerHeight;
-  var Keys = Keyboard;
-  var running;
-  var intervalProc;
-  var d = document.getElementById('report');
+
+  var isRunning = false;
+
+  function init()
+  {
+    spawn(groups[1], config.spinners.count);
+    spawn(groups[2], config.spinners.count);
+    spawn(groups[3], config.spinners.count);
+    spawn(groups[4], config.spinners.count);
+  }
+
+  var intervalProcess;
 
   var ColorBlock = function(r, g, b)
   {
     var self = this;
-    var rValue = 0;
-    var gValue = 0;
-    var bValue = 0;
+    var rValue = r;
+    var gValue = g;
+    var bValue = b;
     self.getColorRValue = function() {return rValue};
     self.getColorGValue = function() {return gValue};
     self.getColorBValue = function() {return bValue};
@@ -48,6 +83,9 @@
     var self = this;
     var element = e;
     this.colorValue = c;
+
+    e.style.setProperty('overflow', 'hidden', null);
+
     self.addSpinner = function(s)
     {
       if (!s instanceof SpinElement) {return false;}
@@ -86,8 +124,8 @@
     {
       x = (xInverted) ? -x : x;
       y = (yInverted) ? -y : y;
-      xPos += x * movementSpeed;
-      yPos += y * movementSpeed;
+      xPos += x * config.movementSpeed;
+      yPos += y * config.movementSpeed;
     };
 
     self.getName = function () {return name;};
@@ -147,7 +185,7 @@
     var cStyle = null;
     var rotation = 0;
 
-    self.getCalcStyle = function () {if(!cStyle){cStyle = window.getComputedStyle(element)};return cStyle};
+    self.getCalcStyle = function () {if(!cStyle){cStyle = window.getComputedStyle(element)} return cStyle};
     self.getElement = function () {return element};
     self.getRotationDegreeModifier = function () {return degreeMod};
     self.getRotationSpeedModifier = function () {return speedMod};
@@ -157,7 +195,7 @@
       var a;
       if (typeof n != 'number') {n = 1;}
       if (n == 0) {return;}
-      a = (n * rotationSpeed * speedMod);
+      a = (n * config.rotationSpeed * speedMod);
       if (r) {rotation -= a} else {rotation += a}
       if (rotation > 360) {rotation -= 360} else if (rotation < 0) {rotation+=360}
     }
@@ -165,8 +203,8 @@
 
 
   var hX, hY;
-  hX = Math.floor(tx / 2);
-  hY = Math.floor(ty / 2);
+  hX = Math.floor(config.tx / 2);
+  hY = Math.floor(config.ty / 2);
   var groups = {
     1: new Spinner('mouse', hX, hY, new ColorBlock(255, 255, 255), false, false),
     2: new Spinner('invx', hX, hY, new ColorBlock(255, 255, 255), true, false),
@@ -186,14 +224,6 @@
   );
   body.getElement().addEventListener('keyup', function (event) {currentKeys[event.keyCode] = false;});
 
-  function init()
-  {
-    spawn(groups[1], squares.count);
-    spawn(groups[2], squares.count);
-    spawn(groups[3], squares.count);
-    spawn(groups[4], squares.count);
-  }
-
   init();
 
   function spawn(s, num)
@@ -202,6 +232,18 @@
     if (!s instanceof Spinner) {return false;}
     rp = Math.floor(90 / num);
     rm = 1 / num * 1.5;
+
+    var d = document.createElement('div');
+    d.style.setProperty('width',        config.spinners.size + 'px',               null);
+    d.style.setProperty('height',       config.spinners.size + 'px',               null);
+    d.style.setProperty('border-style', config.spinners.border.style,              null);
+    d.style.setProperty('border-width', config.spinners.border.size + 'px',        null);
+    d.style.setProperty('position',     'absolute',                                null);
+    d.style.setProperty('top',          Math.floor(config.ty/2) + 'px',            null);
+    d.style.setProperty('left',         Math.floor(config.tx/2) + 'px',            null);
+    d.style.setProperty('margin-left',  Math.floor(config.spinners.size/2) + 'px', null);
+    d.style.setProperty('margin-top',   Math.floor(config.spinners.size/2) + 'px', null);
+
     for (i = 0; i < num; i++) {
       rt = s.getName() + '_' + i;
 
@@ -227,10 +269,10 @@
   function isMovingForward()
   {
     var
-      n = currentKeys[Keys.KEY_W],
-      s = currentKeys[Keys.KEY_S],
-      e = currentKeys[Keys.KEY_D],
-      w = currentKeys[Keys.KEY_A],
+      n = currentKeys[Keyboard.KEY_W],
+      s = currentKeys[Keyboard.KEY_S],
+      e = currentKeys[Keyboard.KEY_D],
+      w = currentKeys[Keyboard.KEY_A],
       se = (s && e && !w),
       ne = (n && e && !s && !w);
     n = (n && !e && !s && !w);
@@ -247,7 +289,7 @@
   {
     var a, b, wsad, arrows;
     a = currentKeys;
-    b = Keys;
+    b = Keyboard;
     wsad = (a[b.KEY_W] || a[b.KEY_A] || a[b.KEY_S] || a[b.KEY_D]);
     arrows = (a[b.KEY_ARROW_UP] || a[b.KEY_ARROW_DOWN] || a[b.KEY_ARROW_LEFT] || a[b.KEY_ARROW_RIGHT]);
     return (wsad || arrows);
@@ -262,13 +304,13 @@
    */
   function loop()
   {
-    if (currentKeys[Keys.KEY_ESC]) {
-      running = false;
+    if (currentKeys[Keyboard.KEY_ESC]) {
+      isRunning = false;
     }
     update();
     render();
-    if (!running) {
-      clearInterval(intervalProc);
+    if (!isRunning) {
+      clearInterval(intervalProcess);
     }
   }
 
@@ -284,31 +326,31 @@
       g = groups[g];
 
       if (isControlKeyPressed()) {
-        if (currentKeys[Keys.KEY_W] || currentKeys[Keys.KEY_ARROW_UP]) {
+        if (currentKeys[Keyboard.KEY_W] || currentKeys[Keyboard.KEY_ARROW_UP]) {
           g.move(0, 1);
         }
-        if (currentKeys[Keys.KEY_S] || currentKeys[Keys.KEY_ARROW_DOWN]) {
+        if (currentKeys[Keyboard.KEY_S] || currentKeys[Keyboard.KEY_ARROW_DOWN]) {
           g.move(0, -1);
         }
-        if (currentKeys[Keys.KEY_A] || currentKeys[Keys.KEY_ARROW_LEFT]) {
+        if (currentKeys[Keyboard.KEY_A] || currentKeys[Keyboard.KEY_ARROW_LEFT]) {
           g.move(-1, 0);
         }
-        if (currentKeys[Keys.KEY_D] || currentKeys[Keys.KEY_ARROW_RIGHT]) {
+        if (currentKeys[Keyboard.KEY_D] || currentKeys[Keyboard.KEY_ARROW_RIGHT]) {
           g.move(1, 0);
         }
 
         // Reset ("bounce" effect)
         x = g.getXPos();
         y = g.getYPos();
-        if (x > tx) {
-          g.setXPos(x-tx);
+        if (x > config.tx) {
+          g.setXPos(x-config.tx);
         } else if (x < 0) {
-          g.setXPos(x+tx);
+          g.setXPos(x+config.tx);
         }
-        if (y > ty) {
-          g.setYPos(y-ty);
+        if (y > config.ty) {
+          g.setYPos(y-config.ty);
         } else if (y < 0) {
-          g.setYPos(y+ty);
+          g.setYPos(y+config.ty);
         }
       }
 
@@ -347,15 +389,15 @@
 
   function start()
   {
-    if (!running && isControlKeyPressed()) {
-      running = true;
-      intervalProc = setInterval(loop, 16);
+    if (!isRunning && isControlKeyPressed()) {
+      isRunning = true;
+      intervalProcess = setInterval(loop, 16);
     }
   }
 
   function clearKeyPress(event)
   {
-    var a = currentKeys, b = Keys;
+    var a = currentKeys, b = Keyboard;
     if (a[b.KEY_ESC] || a[b.KEY_W] || a[b.KEY_A] || a[b.KEY_S] || a[b.KEY_D]) {
       event.stopImmediatePropagation();
       event.preventDefault();
@@ -372,20 +414,20 @@
         x = g.getColorRValue();
         y = g.getColorGValue();
         z = g.getColorBValue();
-        if (z < 255 && colorSpeed > 0 || z > 0 && colorSpeed < 0) {
-          z += colorSpeed;
+        if (z < 255 && config.colorSpeed > 0 || z > 0 && config.colorSpeed < 0) {
+          z += config.colorSpeed;
           z = (z < 0) ? 0 : z;
           z = (z > 255) ? 255 : z;
-        } else if (y < 255 && colorSpeed > 0 || y > 0 && colorSpeed < 0) {
-          y += colorSpeed;
+        } else if (y < 255 && config.colorSpeed > 0 || y > 0 && config.colorSpeed < 0) {
+          y += config.colorSpeed;
           y = (y < 0) ? 0 : y;
           y = (y > 255) ? 255 : y;
-        } else if (x < 255 && colorSpeed > 0 || x > 0 && colorSpeed < 0) {
-          x += colorSpeed;
+        } else if (x < 255 && config.colorSpeed > 0 || x > 0 && config.colorSpeed < 0) {
+          x += config.colorSpeed;
           x = (x < 0) ? 0 : x;
           x = (x > 255) ? 255 : x;
         } else {
-          colorSpeed = -colorSpeed;
+          config.colorSpeed = -config.colorSpeed;
         }
         a = true;
       }
