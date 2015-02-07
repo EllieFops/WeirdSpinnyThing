@@ -20,7 +20,9 @@
     },
 
     tx: window.innerWidth,
-    ty: window.innerHeight
+    ty: window.innerHeight,
+    vX: window.scrollX,
+    vY: window.scrollY
   };
 
   var Keyboard = {
@@ -223,7 +225,7 @@
     }
   );
   body.getElement().addEventListener('keyup', function (event) {currentKeys[event.keyCode] = false;});
-
+  body.getElement().addEventListener('scroll', function () {config.vX = window.scrollX; config.vY=window.scrollY});
   init();
 
   function spawn(s, num)
@@ -238,7 +240,7 @@
     d.style.setProperty('height',       config.spinners.size + 'px',               null);
     d.style.setProperty('border-style', config.spinners.border.style,              null);
     d.style.setProperty('border-width', config.spinners.border.size + 'px',        null);
-    d.style.setProperty('position',     'absolute',                                null);
+    d.style.setProperty('position',     'fixed',                                   null);
     d.style.setProperty('top',          Math.floor(config.ty/2) + 'px',            null);
     d.style.setProperty('left',         Math.floor(config.tx/2) + 'px',            null);
     d.style.setProperty('margin-left',  Math.floor(config.spinners.size/2) + 'px', null);
