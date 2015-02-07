@@ -2,4 +2,4 @@
 
 A weird / amusing spinny thing created out of boredom while working on other projects.
 
-Demo @ http://vulpine.io/dev/WST
+Demo @ http://vulpine.io/dev/WTS
