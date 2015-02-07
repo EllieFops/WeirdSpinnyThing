@@ -32,7 +32,7 @@
 
   var body = document.getElementsByTagName('body')[0];
 
-  body.addEventListener('keydown', function(event) {currentKeys[event.keyCode]=true;start();});
+  body.addEventListener('keydown', function(event) {currentKeys[event.keyCode]=true;start();clearKeyPress(event)});
   body.addEventListener('keyup', function(event) {currentKeys[event.keyCode] = false;});
 
   tx = window.innerWidth;
@@ -48,21 +48,21 @@
   init();
 
   function spawn(num) {
-    var i, t, rm, rp, rt;
+    var a, i, t, rm, rp, rt;
     rt = [];
     rp = Math.floor(90 / num);
     rm = 1 / (num * 1.5);
     for (i = 0; i < num; i++) {
       t = d.cloneNode(false);
-      body.appendChild(t);
-      t.style.setProperty('display', 'block');
-      t.style.setProperty('transform', 'rotate(' + (rp * i) + 'deg)');
+      a = body.appendChild(t);
+      t.style.setProperty('display', 'block', null);
+      makeRotateString(t, (rp * i));
       rt.push(
         {
           el: t,
           rp: rp * (i + 1),
           rm: rm * (i + 1),
-          cs: window.getComputedStyle(t)
+          cs: window.getComputedStyle(a)
         }
       );
     }
@@ -123,9 +123,17 @@
     }
   }
 
+  function clearKeyPress(event)
+  {
+    var a = currentKeys, b = Keys;
+    if (a[b.KEY_ESC]||a[b.KEY_W]||a[b.KEY_A]||a[b.KEY_S]||a[b.KEY_D]) {
+      event.stopImmediatePropagation(); event.preventDefault();
+    }
+  }
+
   function colorShift() {
     var a, b, c, rgb, w, x, y, z;
-    a = groups['1'].elements[0].cs.borderColor;
+    a = groups['1'].elements[0].cs.borderTopColor;
     w = a.match(/^rgb\((\d+), (\d+), (\d+)\)/) || a.match(/^#(\d{6}|\d{3})/);
     if (!w) {return;}
     if (w[0].indexOf('rgb') != -1) {
@@ -163,7 +171,7 @@
       g = groups[g].elements;
       c = g.length;
       for (var i = 0; i < c; i++) {
-        g[i].el.style.setProperty('border-color', rgb);
+        g[i].el.style.setProperty('border-color', rgb, null);
       }
     }
     x = Math.abs(x - 255);
@@ -173,7 +181,7 @@
   }
 
   function rotateBlocks() {
-    var a, b, i, c;
+    var a, i, c;
     rot += (isMovingForward()) ? rotationSpeed : -rotationSpeed;
     if (rot > 360) {
       rot -= 360;
@@ -188,7 +196,7 @@
       c = g.length;
       for (i = 0; i < c; i++) {
         a = rot * g[i].rm + g[i].rp;
-        g[i].el.style.setProperty('transform', 'rotate(' + (Math.round(a*10) / 10) + 'deg)');
+        makeRotateString(g[i].el, (Math.round(a*10) / 10));
       }
     }
   }
@@ -228,7 +236,7 @@
 
         x = x.toString() + 'px';
         for (i = 0; i < c; i++) {
-          e[i].el.style.setProperty('top', x);
+          e[i].el.style.setProperty('top', x, null);
         }
       }
 
@@ -247,10 +255,18 @@
         c = g.elements.length;
         x = x.toString() + 'px';
         for (i = 0; i < c; i++) {
-          e[i].el.style.setProperty('left', x);
+          e[i].el.style.setProperty('left', x, null);
         }
       }
     }
+  }
+
+  function makeRotateString (e, n) {
+    if (!e instanceof HTMLElement) {return;}
+    var a = 'rotate('+n+'deg)';
+    e.style.setProperty('-ms-transform', a, null);
+    e.style.setProperty('-webkit-transform', a, null);
+    e.style.setProperty('transform', a, null);
   }
 })();
 
