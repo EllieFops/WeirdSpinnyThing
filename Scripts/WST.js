@@ -1,17 +1,14 @@
-/**
- * Good god, don't look here, this was not actually meant to be a game when i started it and has devolved into a silly
- * mess of horrifying garbage.
- */
-
 (function ()
 {
   var config = {
+
+    // General Configuration
     colorSpeed: 1,
-    rotationSpeed: 12,
+    rotationSpeed: 8,
     movementSpeed: 6,
 
     spinners: {
-      size: 10,
+      size: 20,
       count: 3,
       border: {
         size: 10,
@@ -52,16 +49,20 @@
 
   var isRunning = false;
 
-  function init()
-  {
-    spawn(groups[1], config.spinners.count);
-    spawn(groups[2], config.spinners.count);
-    spawn(groups[3], config.spinners.count);
-    spawn(groups[4], config.spinners.count);
-  }
+  var groups = {};
 
   var intervalProcess;
 
+  var body;
+
+  /**
+   * Color Block
+   *
+   * @param r {int} Red Value (0-255)
+   * @param g {int} Green Value (0-255)
+   * @param b {int} Blue Value (0-255)
+   * @constructor
+   */
   var ColorBlock = function(r, g, b)
   {
     var self = this;
@@ -72,12 +73,7 @@
     self.getColorGValue = function() {return gValue};
     self.getColorBValue = function() {return bValue};
     self.getRGBString = function () {return 'rgb(' + rValue + ', ' + gValue + ', ' + bValue + ')';};
-    self.setColor = function(r, g, b)
-    {
-      rValue = r;
-      gValue = g;
-      bValue = b;
-    };
+    self.setColor = function(r, g, b) {rValue = r;gValue = g;bValue = b;};
   };
 
   var Container = function(e, c)
@@ -86,7 +82,7 @@
     var element = e;
     this.colorValue = c;
 
-    e.style.setProperty('overflow', 'hidden', null);
+    e.style.setProperty('background-image', 'none', null);
 
     self.addSpinner = function(s)
     {
@@ -102,7 +98,9 @@
 
   /**
    * Spinner
+   *
    * @constructor
+   *
    * @param n  {string}     Name or Title of this spinner.
    * @param x  {number}     Starting X position.
    * @param y  {number}     Starting Y position.
@@ -118,6 +116,7 @@
     var yInverted = yi == true;
     var xPos = x;
     var yPos = y;
+    var rotation = 0;
     var elements = [];
 
     this.colorValue = (c instanceof ColorBlock) ? c : null;
@@ -136,14 +135,27 @@
     self.getYPos = function () {return yPos};
     self.setXPos = function (x) {xPos=x};
     self.setYPos = function (y) {yPos=y};
+    self.getRotation = function () {return rotation};
+    self.setRotation = function (r) {rotation = r};
+    self.rotate = function (n, r) {
+      var a, c, i;
+      a = n * config.rotationSpeed;
+      rotation = (r) ? rotation-a : rotation+a;
+      if (rotation > 360) {rotation-=360} else if (rotation < 0) {rotation+=360}
+      c = elements.length;
+      for (i = 0; i < c; i++) {
+        elements[i].rotate(r);
+      }
+    };
     self.isXInverted = function () {return xInverted;};
     self.setXInverted = function (b) {xInverted = b == true;};
     self.isYInverted = function () {return yInverted;};
     self.setYInverted = function (b) {yInverted = b == true;};
     self.addElement = function (e)
     {
-      if (!e instanceof HTMLElement) {return false;}
+      if (!e instanceof SpinElement) {return false;}
       elements.push(e);
+      e.setParent(this);
       return true;
     };
     self.getElementAt = function (i)
@@ -178,6 +190,15 @@
     }
   };
 
+  /**
+   * Spin Element
+   *
+   * @param e {HTMLElement} Backing DOM element.
+   * @param p {number}      Rotation position modifier.
+   * @param s {number}      Rotation speed modifier
+   *
+   * @constructor
+   */
   var SpinElement = function (e, p, s)
   {
     var self = this;
@@ -186,47 +207,52 @@
     var speedMod = s;
     var cStyle = null;
     var rotation = 0;
+    var parent;
 
     self.getCalcStyle = function () {if(!cStyle){cStyle = window.getComputedStyle(element)} return cStyle};
     self.getElement = function () {return element};
     self.getRotationDegreeModifier = function () {return degreeMod};
     self.getRotationSpeedModifier = function () {return speedMod};
     self.getRotation = function () {return rotation;};
-    self.rotate = function (n, r)
+    self.getParent = function () {return parent};
+    self.setParent = function (p) {parent = p;};
+    self.rotate = function (r)
     {
-      var a;
-      if (typeof n != 'number') {n = 1;}
-      if (n == 0) {return;}
-      a = (n * config.rotationSpeed * speedMod);
-      if (r) {rotation -= a} else {rotation += a}
+      var a = (parent.getRotation() * speedMod) + degreeMod;
+      rotation = (r) ? -a : a;
       if (rotation > 360) {rotation -= 360} else if (rotation < 0) {rotation+=360}
     }
   };
 
+  function init()
+  {
+    body = new Container(document.getElementsByTagName('body')[0], new ColorBlock(0,0,0));
+    body.getElement().addEventListener(
+      'keydown', function (event)
+      {
+        currentKeys[event.keyCode] = true;
+        start();
+        clearKeyPress(event)
+      }
+    );
+    body.getElement().addEventListener('keyup', function (event) {currentKeys[event.keyCode] = false;});
+    body.getElement().addEventListener('scroll', function () {config.vX = window.scrollX; config.vY=window.scrollY});
 
-  var hX, hY;
-  hX = Math.floor(config.tx / 2);
-  hY = Math.floor(config.ty / 2);
-  var groups = {
-    1: new Spinner('mouse', hX, hY, new ColorBlock(255, 255, 255), false, false),
-    2: new Spinner('invx', hX, hY, new ColorBlock(255, 255, 255), true, false),
-    3: new Spinner('invy', hX, hY, new ColorBlock(255, 255, 255), false, true),
-    4: new Spinner('invb', hX, hY, new ColorBlock(255, 255, 255), true, true)
-  };
 
-  var body = new Container(document.getElementsByTagName('body')[0], new ColorBlock(0,0,0));
+    var hX, hY;
+    hX = Math.floor(config.tx / 2);
+    hY = Math.floor(config.ty / 2);
 
-  body.getElement().addEventListener(
-    'keydown', function (event)
-    {
-      currentKeys[event.keyCode] = true;
-      start();
-      clearKeyPress(event)
-    }
-  );
-  body.getElement().addEventListener('keyup', function (event) {currentKeys[event.keyCode] = false;});
-  body.getElement().addEventListener('scroll', function () {config.vX = window.scrollX; config.vY=window.scrollY});
-  init();
+    groups[1] = new Spinner('mouse', hX, hY, new ColorBlock(255, 255, 255), false, false);
+    groups[2] = new Spinner('invx', hX, hY, new ColorBlock(255, 255, 255), true, false);
+    groups[3] = new Spinner('invy', hX, hY, new ColorBlock(255, 255, 255), false, true);
+    groups[4] = new Spinner('invb', hX, hY, new ColorBlock(255, 255, 255), true, true);
+
+    spawn(groups[1], config.spinners.count);
+    spawn(groups[2], config.spinners.count);
+    spawn(groups[3], config.spinners.count);
+    spawn(groups[4], config.spinners.count);
+  }
 
   function spawn(s, num)
   {
@@ -252,57 +278,25 @@
       t = d.cloneNode(false);
       t.setAttribute('id', rt);
       t.style.setProperty('display', 'block', null);
-      makeRotateString(t, (rp * i));
+      addRotateTransform(t, (rp * i));
 
-      a = new SpinElement(t, rp*i, Math.sin(rm+i) / (num/2));
+      a = new SpinElement(t, rp*(i+1), rm*(i+1));
       s.addElement(a);
       if (!body.addSpinner(a)) {console.log("Did not add spinner to container.", a, body);}
     }
     return true;
   }
 
-  /**
-   * Crappy Check to see if the keyboard controls are pushing up or to the right.
-   *
-   * Going clockwise N -> SE are "Forward" and S -> NW are going "Backward"
-   *
-   * @returns {boolean}
-   */
-  function isMovingForward()
+  function start()
   {
-    var
-      n = currentKeys[Keyboard.KEY_W],
-      s = currentKeys[Keyboard.KEY_S],
-      e = currentKeys[Keyboard.KEY_D],
-      w = currentKeys[Keyboard.KEY_A],
-      se = (s && e && !w),
-      ne = (n && e && !s && !w);
-    n = (n && !e && !s && !w);
-    e = (e && !n && !s && !w);
-    return ((n || ne || e || se));
+    if (!isRunning && isControlKeyPressed()) {
+      isRunning = true;
+      intervalProcess = setInterval(loop, 16);
+    }
   }
 
   /**
-   * Are any of the direction control keys pressed
-   *
-   * @returns {boolean}
-   */
-  function isControlKeyPressed()
-  {
-    var a, b, wsad, arrows;
-    a = currentKeys;
-    b = Keyboard;
-    wsad = (a[b.KEY_W] || a[b.KEY_A] || a[b.KEY_S] || a[b.KEY_D]);
-    arrows = (a[b.KEY_ARROW_UP] || a[b.KEY_ARROW_DOWN] || a[b.KEY_ARROW_LEFT] || a[b.KEY_ARROW_RIGHT]);
-    return (wsad || arrows);
-  }
-
-
-  /**
-   * Loop! It's a Loop!
-   *
-   * Yes I know this is a horrible excuse for a game loop, but this was never meant to be a 'game' and I will fix it
-   * eventually... probably.
+   * Primary Game Loop
    */
   function loop()
   {
@@ -356,10 +350,7 @@
         }
       }
 
-      c = g.getElementCount();
-      for (i = 0; i < c; i++) {
-        g.getElementAt(i).rotate(1);
-      }
+      g.rotate(1);
     }
 
     colorShift();
@@ -378,23 +369,49 @@
         if (!a instanceof SpinElement) {continue;}
         x = g.getXPos();
         y = g.getYPos();
-        makeRotateString(a.getElement(), a.getRotation());
+        addRotateTransform(a.getElement(), a.getRotation());
         a.getElement().style.setProperty('top', g.getYPos() + 'px', null);
         a.getElement().style.setProperty('left', g.getXPos() + 'px', null);
         a.getElement().style.setProperty('border-color', c.getRGBString(), null);
       }
     }
-    body.getElement()
-      .style
-      .setProperty('background-color', body.colorValue.getRGBString(), null);
+    body.getElement().style.setProperty('background-color', body.colorValue.getRGBString(), null);
   }
 
-  function start()
+  /**
+   * Crappy Check to see if the keyboard controls are pushing up or to the right.
+   *
+   * Going clockwise N -> SE are "Forward" and S -> NW are going "Backward"
+   *
+   * @returns {boolean}
+   */
+  function isMovingForward()
   {
-    if (!isRunning && isControlKeyPressed()) {
-      isRunning = true;
-      intervalProcess = setInterval(loop, 16);
-    }
+    var
+      n = currentKeys[Keyboard.KEY_W],
+      s = currentKeys[Keyboard.KEY_S],
+      e = currentKeys[Keyboard.KEY_D],
+      w = currentKeys[Keyboard.KEY_A],
+      se = (s && e && !w),
+      ne = (n && e && !s && !w);
+    n = (n && !e && !s && !w);
+    e = (e && !n && !s && !w);
+    return ((n || ne || e || se));
+  }
+
+  /**
+   * Are any of the direction control keys pressed
+   *
+   * @returns {boolean}
+   */
+  function isControlKeyPressed()
+  {
+    var a, b, wsad, arrows;
+    a = currentKeys;
+    b = Keyboard;
+    wsad = (a[b.KEY_W] || a[b.KEY_A] || a[b.KEY_S] || a[b.KEY_D]);
+    arrows = (a[b.KEY_ARROW_UP] || a[b.KEY_ARROW_DOWN] || a[b.KEY_ARROW_LEFT] || a[b.KEY_ARROW_RIGHT]);
+    return (wsad || arrows);
   }
 
   function clearKeyPress(event)
@@ -441,7 +458,13 @@
     body.colorValue.setColor(x, y, z)
   }
 
-  function makeRotateString(e, n)
+  /**
+   * Add CSS transforms for rotation.
+   *
+   * @param e {HTMLElement} Element to be rotated.
+   * @param n {number}      Rotation value.
+   */
+  function addRotateTransform(e, n)
   {
     if (!e instanceof HTMLElement) {return;}
     var b = Math.round(n * 10) / 10;
@@ -450,5 +473,7 @@
     e.style.setProperty('-webkit-transform', a, null);
     e.style.setProperty('transform', a, null);
   }
+
+  init();
 })();
 
