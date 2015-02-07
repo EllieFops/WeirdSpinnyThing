@@ -1,4 +1,5 @@
 # WeirdSpinnyThing
-A weird spinny thing created out of boredom while working on something else...
 
-Demo @ http://vulpine.io/dev/WST (Currently only verified functional in Chrome)
+A weird / amusing spinny thing created out of boredom while working on other projects.
+
+Demo @ http://vulpine.io/dev/WST
