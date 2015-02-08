@@ -256,12 +256,13 @@
 
   function spawn(s, num)
   {
-    var a, i, t, rm, rp, rt;
+    var a, d, i, t, rm, rp, rt, m;
     if (!s instanceof Spinner) {return false;}
     rp = Math.floor(90 / num);
     rm = 1 / num * 1.5;
 
-    var d = document.createElement('div');
+    d = document.createElement('div');
+    m = -Math.floor((config.spinners.size + (config.spinners.border.size * 2))/2);
     d.style.setProperty('width',        config.spinners.size + 'px',               null);
     d.style.setProperty('height',       config.spinners.size + 'px',               null);
     d.style.setProperty('border-style', config.spinners.border.style,              null);
@@ -269,8 +270,8 @@
     d.style.setProperty('position',     'fixed',                                   null);
     d.style.setProperty('top',          Math.floor(config.ty/2) + 'px',            null);
     d.style.setProperty('left',         Math.floor(config.tx/2) + 'px',            null);
-    d.style.setProperty('margin-left',  Math.floor(config.spinners.size/2) + 'px', null);
-    d.style.setProperty('margin-top',   Math.floor(config.spinners.size/2) + 'px', null);
+    d.style.setProperty('margin-left',  m + 'px', null);
+    d.style.setProperty('margin-top',   m + 'px', null);
 
     for (i = 0; i < num; i++) {
       rt = s.getName() + '_' + i;
